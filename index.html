@@ -50,10 +50,26 @@
                     <i class="fas fa-random"></i>
                 </div>
             </div>
+            <div class="music-icon listvolum">
+                <div class="volumbox"> <i class="fas fa-volume-mute"></i>
+                    <i class="fas fa-volume-up"></i>
+                </div>
+                <input id="volum" class="volum" type="range" value="100" step="1" min="0" max="100">
+            </div>
 
-            <input id="progress" class="progress" type="range" value="0" step="1" min="0" max="100">
-
-            <audio id="audio" src=""></audio>
+            <!-- <input id="progress" class="progress" type="range" value="0" step="1" min="0" max="100"> -->
+            <div class="app-bottom-center-bot">
+                <div class="timemusic">
+                    <div class="timemusic_list">
+                        <span class="current">00:00</span>
+                        <div class="progress-area">
+                            <div class="progress-bar"></div>
+                        </div>
+                        <span class="duration"></span>
+                    </div>
+                </div>
+                <audio id="audio" src=""></audio>
+            </div>
         </div>
 
         <!-- Playlist -->
@@ -76,13 +92,21 @@
         const preBtn = $('.btn-prev');
         const randomBtn = $('.btn-random');
         const repeatBtn = $('.btn-repeat');
+        const progress = $('.progress-bar')
+        const progressArea = $('.progress-area')
+        const volumBtn = $('.volum')
+        const volumArea = $('.volumbox')
+        const volumArea2 = $('.volumbox.mute')
+        const volumUp = $('.volumbox .fa-volume-up')
+        const volumMute = $('.volumbox .fa-volume-mute')
         const app = {
             currentIndex: 0,
             isPlaying: false,
             isRandom: false,
             isRepeat: false,
+            isMute: false,
             config: JSON.parse(localStorage.getItem(PLAYER_STORAGE_KEY)) || {},
-            setConfig :function (key, value) {
+            setConfig: function (key, value) {
                 this.config[key] = value;
                 localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(this.config));
             },
@@ -164,7 +188,7 @@
                     img: 'https://i1.sndcdn.com/artworks-FX9IdYtt4PAA-0-t500x500.jpg',
 
                 },
-            
+
 
             ],
             render: function () {
@@ -233,15 +257,47 @@
                     cdThumbAnimate.pause();
                 }
                 // Khi song được playing tiến độ bài hát được thay đổi
-                audio.ontimeupdate = function () {
-                    const percent = (audio.currentTime / audio.duration) * 100;
-                    $('#progress').value = percent;
-                }
+                // audio.ontimeupdate = function () {
+                //     const percent = (audio.currentTime / audio.duration) * 100;
+                //     $('#progress').value = percent;
+                // }
+                // Tiến độ bài hát
+                audio.addEventListener('timeupdate', function (e) {
+                    const currentTime = e.target.currentTime;
+                    const duration = e.target.duration;
+                    const percent = (currentTime / duration) * 100;
+                    progress.style.width = `${percent}%`;
+                    let musicCurrentTime = $(".current"),
+                        musicDuartion = $(".duration");
+                    audio.addEventListener("loadeddata", () => {
+                        let mainAdDuration = audio.duration;
+                        let totalMin = Math.floor(mainAdDuration / 60);
+                        let totalSec = Math.floor(mainAdDuration % 60);
+                        if (totalSec < 10) { //if sec is less than 10 then add 0 before it
+                            totalSec = `0${totalSec}`;
+                        }
+                        musicDuartion.innerText = `${totalMin}:${totalSec}`;
+                    })
+                    let currentMin = Math.floor(currentTime / 60);
+                    let currentSec = Math.floor(currentTime % 60);
+                    if (currentSec < 10) { //if sec is less than 10 then add 0 before it
+                        currentSec = `0${currentSec}`;
+                    }
+                    musicCurrentTime.innerText = `${currentMin}:${currentSec}`;
+                })
                 //Xử lý khi tua song 
-                $('#progress').onchange = function () {
-                    const percent = this.value;
-                    audio.currentTime = (percent / 100) * audio.duration;
-                }
+                // $('#progress').onchange = function () {
+                //     const percent = this.value;
+                //     audio.currentTime = (percent / 100) * audio.duration;
+                // }
+                // Xử lý khi tua song
+                progressArea.addEventListener('click', function (e) {
+                    let progressWidthval = progressArea.clientWidth
+                    let clickedOffset = e.offsetX
+                    let songDuration = audio.duration
+
+                    audio.currentTime = (clickedOffset / progressWidthval) * songDuration
+                })
                 //Khi nextSong
                 nextBtn.onclick = function () {
                     if (_this.isRandom) {
@@ -301,6 +357,32 @@
                             audio.play();
                         }
                     }
+                }
+                //volume
+                volumBtn.onchange = function (e) {
+                    let currentValum = e.target.value
+                    audio.volume = currentValum / 100;
+                    if (currentValum == 0) {
+                        volumArea.classList.add('mute');
+                        volumBtn.value =0;
+                    } else {
+                        volumArea.classList.remove('mute');
+                    }
+                }
+                volumUp.onclick = function () {
+                    // _this.isMute = !_this.isMute;
+                    let currentValum = volumBtn.value;
+                    currentValum = 0;
+                    audio.volume = currentValum;
+                    volumArea.classList.add('mute')
+                    volumBtn.value =0;
+                    // randomBtn.classList.toggle("mute", _this.isMute);
+
+                }
+                volumMute.onclick = function () {
+                   volumArea.classList.remove('mute');
+                     volumBtn.value =100;
+                     audio.volume = 1;
                 }
 
             },
